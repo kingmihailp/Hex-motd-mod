@@ -1,6 +1,6 @@
 package com.kingmihailp.hexmotd.command;
 
-import com.kingmihailp.hexmotd.config.HexMotdConfig;
+import com.kingmihailp.hexmotd.MotdCache;
 import com.kingmihailp.hexmotd.event.ServerPingHandler;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
@@ -44,17 +44,12 @@ public final class HexMotdCommand {
     }
 
     private static int executeStatus(CommandContext<CommandSourceStack> ctx) {
-        boolean enabled = HexMotdConfig.ENABLED.get();
-        String line1   = HexMotdConfig.MOTD_LINE1.get();
-        String line2   = HexMotdConfig.MOTD_LINE2.get();
-
         ctx.getSource().sendSuccess(() -> Component.literal(
-            "[HexMOTD] Status\n" +
-            "  enabled : " + enabled + "\n" +
-            "  line 1  : " + line1   + "\n" +
-            "  line 2  : " + line2
+            "[HexMOTD] Current cache\n" +
+            "  enabled : " + MotdCache.enabled + "\n" +
+            "  line 1  : " + MotdCache.line1   + "\n" +
+            "  line 2  : " + MotdCache.line2
         ).withStyle(ChatFormatting.AQUA), false);
-
         return 1;
     }
 }

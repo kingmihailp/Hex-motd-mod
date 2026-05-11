@@ -1,0 +1,13 @@
+{
+    "required": true,
+    "package": "com.kingmihailp.hexmotd.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "mixins": [],
+    "server": [
+        "ServerStatusMixin"
+    ],
+    "client": [],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}

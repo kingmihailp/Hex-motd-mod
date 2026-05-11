@@ -22,16 +22,15 @@ public class HexMotd {
         // Register server config (generates config/hexmotd-server.toml)
         modContainer.registerConfig(ModConfig.Type.SERVER, HexMotdConfig.SPEC);
 
-        // Mod bus: config lifecycle events
+        // Mod bus: sync MotdCache when config is loaded or auto-reloaded by NeoForge
         modEventBus.addListener(ServerPingHandler::onConfigLoad);
         modEventBus.addListener(ServerPingHandler::onConfigReload);
 
-        // Game bus: server list ping + command registration
-        NeoForge.EVENT_BUS.addListener(ServerPingHandler::onServerListPing);
+        // Game bus: command registration only (MOTD is now handled by the Mixin)
         NeoForge.EVENT_BUS.addListener((RegisterCommandsEvent event) ->
             HexMotdCommand.register(event.getDispatcher())
         );
 
-        LOGGER.info("[HexMOTD] Mod loaded. Config: config/hexmotd-server.toml");
+        LOGGER.info("[HexMOTD] Loaded. Config: config/hexmotd-server.toml | Command: /hexmotd reload");
     }
 }
