@@ -1,51 +1,61 @@
 package com.kingmihailp.hexmotd.mixin;
 
+import com.kingmihailp.hexmotd.HexMotd;
 import com.kingmihailp.hexmotd.MotdCache;
 import com.kingmihailp.hexmotd.util.ColorParser;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.protocol.status.ServerStatus;
-import net.minecraft.server.network.ServerStatusPacketListenerImpl;
+import net.minecraft.server.MinecraftServer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Intercepts the ServerStatus that is about to be sent to the pinging client
- * and replaces its description with our hex-color MOTD.
+ * Intercepts MinecraftServer.getStatus() – called every time a client pings the server.
+ * Replacing the description here is safe because:
+ *  - getStatus() is a simple getter present in all Minecraft versions.
+ *  - We never touch the packet layer, so no Netty / protocol-phase issues.
+ *  - A try-catch(Throwable) means any unexpected API mismatch is logged, not propagated.
  */
-@Mixin(ServerStatusPacketListenerImpl.class)
+@Mixin(MinecraftServer.class)
 public class ServerStatusMixin {
 
-    @ModifyArg(
-        method = "handleStatusRequest",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/network/protocol/status/ClientboundStatusResponsePacket;<init>(Lnet/minecraft/network/protocol/status/ServerStatus;)V"
-        ),
-        index = 0
+    @Inject(
+        method  = "getStatus",
+        at      = @At("RETURN"),
+        cancellable = true,
+        require = 0   // optional: if the method is somehow absent, don't crash
     )
-    private ServerStatus hexMotd_replaceDescription(ServerStatus original) {
-        if (original == null || !MotdCache.ready || !MotdCache.enabled) return original;
+    private void hexMotd_onGetStatus(CallbackInfoReturnable<ServerStatus> cir) {
+        if (!MotdCache.ready || !MotdCache.enabled) return;
 
-        String l1 = MotdCache.line1;
-        String l2 = MotdCache.line2;
+        ServerStatus original = cir.getReturnValue();
+        if (original == null) return;
 
-        MutableComponent motd = Component.empty();
-        if (!l1.isEmpty()) {
-            motd.append(ColorParser.parse(l1));
+        try {
+            String l1 = MotdCache.line1;
+            String l2 = MotdCache.line2;
+
+            MutableComponent motd = Component.empty();
+            if (!l1.isEmpty()) {
+                motd.append(ColorParser.parse(l1));
+            }
+            if (!l2.isEmpty()) {
+                if (!l1.isEmpty()) motd.append(Component.literal("\n"));
+                motd.append(ColorParser.parse(l2));
+            }
+
+            cir.setReturnValue(new ServerStatus(
+                motd,
+                original.players(),
+                original.version(),
+                original.favicon(),
+                original.enforcesSecureChat()
+            ));
+        } catch (Throwable t) {
+            HexMotd.LOGGER.error("[HexMOTD] Failed to modify MOTD in getStatus(): {}", t.toString());
         }
-        if (!l2.isEmpty()) {
-            if (!l1.isEmpty()) motd.append(Component.literal("\n"));
-            motd.append(ColorParser.parse(l2));
-        }
-
-        return new ServerStatus(
-            motd,
-            original.players(),
-            original.version(),
-            original.favicon(),
-            original.enforcesSecureChat()
-        );
     }
 }
