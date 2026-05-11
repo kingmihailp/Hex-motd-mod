@@ -1,0 +1,29 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="MIT"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+description='''
+${mod_description}
+
+Supports &#RRGGBB hex colors and &X standard Minecraft color codes in MOTD.
+Config: config/hexmotd-server.toml
+Command: /hexmotd reload
+'''
+
+[[dependencies.hexmotd]]
+    modId="neoforge"
+    type="required"
+    versionRange="${neo_version_range}"
+    ordering="NONE"
+    side="SERVER"
+
+[[dependencies.hexmotd]]
+    modId="minecraft"
+    type="required"
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="SERVER"
